@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+.env
+sample/
+possum_patrol.db

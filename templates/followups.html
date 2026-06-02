@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Follow-ups — Possum Patrol</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f4f0; color: #222; font-size: 14px; }
+
+.header { background: #2c3e1e; color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 16px; }
+.header h1 { font-size: 18px; font-weight: 600; }
+.header .meta { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+.header-actions { margin-left: auto; display: flex; gap: 8px; }
+.header-actions a { color: rgba(255,255,255,0.7); font-size: 12px; text-decoration: none; padding: 5px 12px; border: 1px solid rgba(255,255,255,0.25); border-radius: 5px; }
+.header-actions a:hover { background: rgba(255,255,255,0.1); }
+
+/* ── Filter bar ── */
+.filter-bar { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 10px 20px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.filter-group { display: flex; align-items: center; gap: 6px; }
+.filter-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #999; white-space: nowrap; }
+.filter-pill { font-size: 12px; padding: 4px 11px; border-radius: 20px; border: 1px solid #d8d8d8; background: #fff; color: #555; cursor: pointer; white-space: nowrap; transition: all 0.1s; }
+.filter-pill:hover { border-color: #aaa; color: #222; }
+.filter-pill.active { background: #2c3e1e; border-color: #2c3e1e; color: #fff; }
+.filter-pill.active-warn { background: #c0392b; border-color: #c0392b; color: #fff; }
+.filter-divider { width: 1px; height: 22px; background: #e0e0e0; }
+.filter-count { font-size: 11px; color: #aaa; margin-left: auto; white-space: nowrap; }
+
+.main { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+.columns { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+
+.section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #888; margin: 0 0 10px; }
+
+.fu-card { background: #fff; border: 1px solid #e4e4e0; border-radius: 8px; margin-bottom: 8px; padding: 12px 14px; display: flex; align-items: flex-start; gap: 12px; }
+.fu-card.overdue { border-left: 4px solid #c0392b; }
+.fu-card.due-soon { border-left: 4px solid #d35400; }
+.fu-card.upcoming { border-left: 4px solid #2980b9; }
+.fu-card.completed { border-left: 4px solid #27ae60; opacity: 0.7; }
+.fu-card[hidden] { display: none !important; }
+
+.fu-main { flex: 1; }
+.fu-from { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fu-subject { font-size: 12px; color: #777; margin-top: 2px; }
+.fu-desc { font-size: 13px; color: #444; margin-top: 4px; line-height: 1.4; }
+.fu-due { font-size: 12px; font-weight: 600; margin-top: 6px; }
+.fu-due.overdue { color: #c0392b; }
+.fu-due.due-soon { color: #d35400; }
+.fu-due.upcoming { color: #2980b9; }
+.fu-due.completed { color: #27ae60; }
+
+.badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
+.badge-EMERGENCY    { background: #fde8e8; color: #c0392b; }
+.badge-COMPLAINT    { background: #fef4e4; color: #d35400; }
+.badge-VIP_COMMERCIAL { background: #fff8e1; color: #b7880a; }
+.badge-QUOTE_REQUEST { background: #e8f4fd; color: #2471a3; }
+.badge-SCHEDULED_SERVICE { background: #eafaf1; color: #1d8348; }
+.badge-VENDOR_OPERATIONAL { background: #f4f6f7; color: #5d6d7e; }
+.badge-COMMUNITY    { background: #fdf2f8; color: #884ea0; }
+.badge-MISC         { background: #f4f6f7; color: #7f8c8d; }
+.badge-SPAM         { background: #f4f6f7; color: #aab7b8; }
+.badge-WEIRD        { background: #f0f3ff; color: #5b6abf; }
+.badge-BLOCKLIST    { background: #f8d7da; color: #721c24; }
+.badge-vip          { background: #fff3cd; color: #856404; }
+
+.fu-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; flex-shrink: 0; }
+.btn { font-size: 12px; padding: 5px 12px; border-radius: 5px; border: 1px solid #d0d0d0; cursor: pointer; background: #fff; color: #333; white-space: nowrap; }
+.btn:hover { background: #f0f0f0; }
+.btn-done { background: #2c3e1e; color: #fff; border-color: #2c3e1e; }
+.btn-done:hover { background: #1a2512; }
+
+.column-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+.column-header .section-label { margin: 0; }
+.visible-count { font-size: 11px; color: #aaa; }
+
+.empty-state { text-align: center; padding: 40px 20px; color: #aaa; font-size: 13px; }
+.no-results { display: none; text-align: center; padding: 30px 20px; color: #bbb; font-size: 12px; font-style: italic; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>🦝 Possum Patrol — Follow-ups</h1>
+    <div class="meta">{{ now.strftime('%-I:%M %p · %A, %B %-d') }}</div>
+  </div>
+  <div class="header-actions">
+    <a href="/">← Back to Inbox</a>
+  </div>
+</div>
+
+{% set open_fus = followups | selectattr('status', 'equalto', 'open') | list %}
+{% set done_fus = followups | selectattr('status', 'equalto', 'completed') | list %}
+
+<!-- Filter bar -->
+<div class="filter-bar">
+  <div class="filter-group">
+    <span class="filter-label">Status</span>
+    <button class="filter-pill active" data-filter="timing" data-value="all" onclick="setFilter('timing', 'all', this)">All</button>
+    <button class="filter-pill" data-filter="timing" data-value="overdue" onclick="setFilter('timing', 'overdue', this)">⏰ Overdue</button>
+    <button class="filter-pill" data-filter="timing" data-value="upcoming" onclick="setFilter('timing', 'upcoming', this)">Upcoming</button>
+  </div>
+  <div class="filter-divider"></div>
+  <div class="filter-group">
+    <span class="filter-label">Category</span>
+    {% set categories = [] %}
+    {% for f in followups %}
+      {% if f.category not in categories %}{% set _ = categories.append(f.category) %}{% endif %}
+    {% endfor %}
+    <button class="filter-pill active" data-filter="category" data-value="all" onclick="setFilter('category', 'all', this)">All</button>
+    {% for cat in categories | sort %}
+    <button class="filter-pill" data-filter="category" data-value="{{ cat }}" onclick="setFilter('category', '{{ cat }}', this)">{{ cat.replace('_', ' ') }}</button>
+    {% endfor %}
+  </div>
+  <div class="filter-divider"></div>
+  <div class="filter-group">
+    <button class="filter-pill" id="vip-toggle" onclick="toggleVip(this)">⭐ VIP Only</button>
+  </div>
+  <span class="filter-count" id="filter-count"></span>
+</div>
+
+<div class="main">
+<div class="columns">
+
+  <!-- Open follow-ups -->
+  <div>
+    <div class="column-header">
+      <div class="section-label">Open</div>
+      <span class="visible-count" id="open-count">({{ open_fus | length }})</span>
+    </div>
+    {% if open_fus %}
+      {% for f in open_fus %}
+      {% set is_overdue = f.due_at < now.isoformat() %}
+      <div class="fu-card {% if is_overdue %}overdue{% else %}upcoming{% endif %}"
+           data-timing="{% if is_overdue %}overdue{% else %}upcoming{% endif %}"
+           data-category="{{ f.category }}"
+           data-vip="{{ '1' if f.is_vip else '0' }}"
+           data-col="open">
+        <div class="fu-main">
+          <div class="fu-from">
+            {{ f.from_name }}
+            {% if f.is_vip %}<span class="badge badge-vip">⭐ VIP</span>{% endif %}
+            <span class="badge badge-{{ f.category }}">{{ f.category.replace('_', ' ') }}</span>
+          </div>
+          <div class="fu-subject">{{ f.subject }}</div>
+          <div class="fu-desc">{{ f.description }}</div>
+          <div class="fu-due {% if is_overdue %}overdue{% else %}upcoming{% endif %}">
+            {% if is_overdue %}⏰ Overdue since {{ f.due_at[:10] }}{% else %}Due {{ f.due_at[:10] }}{% endif %}
+          </div>
+        </div>
+        <div class="fu-actions">
+          <form method="post" action="/followup/{{ f.id }}/complete">
+            <button type="submit" class="btn btn-done">✓ Mark Done</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+      <div class="no-results" id="open-no-results">No follow-ups match the current filters.</div>
+    {% else %}
+      <div class="empty-state">No open follow-ups.</div>
+    {% endif %}
+  </div>
+
+  <!-- Completed follow-ups -->
+  <div>
+    <div class="column-header">
+      <div class="section-label">Completed</div>
+      <span class="visible-count" id="done-count">({{ done_fus | length }})</span>
+    </div>
+    {% if done_fus %}
+      {% for f in done_fus %}
+      <div class="fu-card completed"
+           data-timing="completed"
+           data-category="{{ f.category }}"
+           data-vip="{{ '1' if f.is_vip else '0' }}"
+           data-col="done">
+        <div class="fu-main">
+          <div class="fu-from">
+            {{ f.from_name }}
+            {% if f.is_vip %}<span class="badge badge-vip">⭐ VIP</span>{% endif %}
+            <span class="badge badge-{{ f.category }}">{{ f.category.replace('_', ' ') }}</span>
+          </div>
+          <div class="fu-subject">{{ f.subject }}</div>
+          <div class="fu-desc">{{ f.description }}</div>
+          <div class="fu-due completed">
+            ✓ Completed {{ f.completed_at[:10] if f.completed_at else '' }}
+          </div>
+        </div>
+        <div class="fu-actions">
+          <form method="post" action="/followup/{{ f.id }}/reopen">
+            <button type="submit" class="btn">↩ Reopen</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+      <div class="no-results" id="done-no-results">No follow-ups match the current filters.</div>
+    {% else %}
+      <div class="empty-state">No completed follow-ups yet.</div>
+    {% endif %}
+  </div>
+
+</div>{# end columns #}
+</div>
+
+<script>
+const filters = { timing: 'all', category: 'all', vip: false };
+
+function setFilter(type, value, btn) {
+  filters[type] = value;
+  document.querySelectorAll(`[data-filter="${type}"]`).forEach(el => el.classList.remove('active', 'active-warn'));
+  btn.classList.add(value === 'overdue' ? 'active-warn' : 'active');
+  applyFilters();
+}
+
+function toggleVip(btn) {
+  filters.vip = !filters.vip;
+  btn.classList.toggle('active', filters.vip);
+  applyFilters();
+}
+
+function applyFilters() {
+  const cards = document.querySelectorAll('.fu-card');
+  let openVisible = 0, doneVisible = 0;
+
+  cards.forEach(card => {
+    const col = card.dataset.col;
+    const timing = card.dataset.timing;
+    const category = card.dataset.category;
+    const isVip = card.dataset.vip === '1';
+
+    // timing filter only applies to open column (completed cards are always "completed")
+    const timingMatch = filters.timing === 'all' || col === 'done' || timing === filters.timing;
+    const categoryMatch = filters.category === 'all' || category === filters.category;
+    const vipMatch = !filters.vip || isVip;
+
+    const visible = timingMatch && categoryMatch && vipMatch;
+    card.hidden = !visible;
+
+    if (visible) {
+      if (col === 'open') openVisible++;
+      else doneVisible++;
+    }
+  });
+
+  document.getElementById('open-count').textContent = `(${openVisible})`;
+  document.getElementById('done-count').textContent = `(${doneVisible})`;
+
+  const openNoResults = document.getElementById('open-no-results');
+  const doneNoResults = document.getElementById('done-no-results');
+  if (openNoResults) openNoResults.style.display = openVisible === 0 ? 'block' : 'none';
+  if (doneNoResults) doneNoResults.style.display = doneVisible === 0 ? 'block' : 'none';
+
+  const total = openVisible + doneVisible;
+  const totalAll = document.querySelectorAll('.fu-card').length;
+  document.getElementById('filter-count').textContent =
+    total === totalAll ? '' : `${total} of ${totalAll} shown`;
+}
+</script>
+
+</body>
+</html>

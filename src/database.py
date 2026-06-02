@@ -106,6 +106,19 @@ def get_pending_emails():
         """).fetchall()
 
 
+def get_all_follow_ups():
+    with get_db() as conn:
+        return conn.execute("""
+            SELECT f.*, e.from_name, e.from_address, e.subject, e.category, e.is_vip, e.summary
+            FROM follow_ups f
+            JOIN processed_emails e ON f.email_id = e.id
+            ORDER BY
+                CASE WHEN f.status = 'open' THEN 0 ELSE 1 END,
+                f.priority ASC,
+                f.due_at ASC
+        """).fetchall()
+
+
 def get_follow_ups():
     with get_db() as conn:
         return conn.execute("""
@@ -131,11 +144,37 @@ def get_stats():
         """).fetchone()
 
 
+def get_done_emails():
+    with get_db() as conn:
+        return conn.execute("""
+            SELECT * FROM processed_emails
+            WHERE status = 'done'
+            ORDER BY processed_at DESC
+        """).fetchall()
+
+
+def get_dismissed_emails():
+    with get_db() as conn:
+        return conn.execute("""
+            SELECT * FROM processed_emails
+            WHERE status = 'dismissed'
+            ORDER BY processed_at DESC
+        """).fetchall()
+
+
 def update_email_status(email_id: str, status: str):
     with get_db() as conn:
         conn.execute(
             "UPDATE processed_emails SET status = ? WHERE id = ?",
             (status, email_id),
+        )
+
+
+def reopen_follow_up(fid: int):
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE follow_ups SET status = 'open', completed_at = NULL WHERE id = ?",
+            (fid,),
         )
 
 

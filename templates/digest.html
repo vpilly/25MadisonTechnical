@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Morning Digest — Possum Patrol{% endblock %}
+
+{% block head_styles %}
+.digest-wrap { max-width: 700px; margin: 40px auto; padding: 0 20px 60px; }
+.digest-pre { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; line-height: 1.7; white-space: pre-wrap; color: #222; background: #fff; border: 1px solid #e4e4e0; border-radius: 8px; padding: 28px 32px; }
+{% endblock %}
+
+{% block body %}
+<div class="digest-wrap">
+  <pre class="digest-pre">{{ content }}</pre>
+</div>
+{% endblock %}

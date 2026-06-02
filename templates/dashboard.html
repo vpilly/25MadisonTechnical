@@ -1,44 +1,36 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Possum Patrol Inbox</title>
-<style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f4f0; color: #222; font-size: 14px; }
+{% extends "base.html" %}
+{% block title %}Home — Possum Patrol{% endblock %}
 
-/* ── Header ── */
-.header { background: #2c3e1e; color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 16px; }
-.header h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
-.header .meta { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 2px; }
-.header-actions { margin-left: auto; display: flex; gap: 8px; }
-.header-actions a { color: rgba(255,255,255,0.7); font-size: 12px; text-decoration: none; padding: 5px 12px; border: 1px solid rgba(255,255,255,0.25); border-radius: 5px; }
-.header-actions a:hover { background: rgba(255,255,255,0.1); }
-
+{% block head_styles %}
 /* ── Stats bar ── */
 .stats { display: flex; gap: 1px; background: #ddd; border-bottom: 1px solid #ddd; }
 .stat { flex: 1; background: #fff; padding: 12px 20px; text-align: center; }
 .stat-value { font-size: 26px; font-weight: 700; line-height: 1; }
 .stat-label { font-size: 11px; color: #777; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.4px; }
 .stat.danger .stat-value { color: #c0392b; }
-.stat.warn .stat-value { color: #d35400; }
-.stat.good .stat-value { color: #27ae60; }
-.stat.muted .stat-value { color: #95a5a6; }
+.stat.warn   .stat-value { color: #d35400; }
+.stat.good   .stat-value { color: #27ae60; }
+.stat.muted  .stat-value { color: #95a5a6; }
 
 /* ── Emergency banner ── */
-.emergency-banner { background: #c0392b; color: #fff; padding: 14px 24px; font-weight: 600; font-size: 13px; }
-.emergency-banner ul { margin-top: 6px; padding-left: 18px; font-weight: 400; }
-.emergency-banner li { margin-top: 4px; }
+.emergency-banner { background: #c0392b; color: #fff; padding: 12px 24px 14px; }
+.emergency-banner-title { font-weight: 700; font-size: 13px; letter-spacing: 0.3px; margin-bottom: 10px; }
+.emergency-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 6px; }
+.emergency-item { background: rgba(0,0,0,0.18); border-radius: 5px; padding: 7px 11px; display: flex; flex-direction: column; gap: 2px; }
+.em-name    { font-weight: 700; font-size: 13px; }
+.em-contact { font-size: 12px; opacity: 0.92; }
+.em-summary { font-size: 11px; opacity: 0.72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* ── Layout ── */
-.body { display: grid; grid-template-columns: 1fr 300px; gap: 0; min-height: calc(100vh - 120px); }
-.main-col { padding: 16px 20px; overflow-y: auto; }
-.sidebar { background: #fff; border-left: 1px solid #e0e0e0; padding: 16px; overflow-y: auto; }
+/* ── Body grid ── */
+.home-body { display: grid; grid-template-columns: 3fr 2fr; gap: 0; min-height: calc(100vh - 52px); }
+.email-col  { padding: 20px; overflow-y: auto; border-right: 1px solid #e4e4e0; }
+.fu-col     { padding: 20px; background: #fff; overflow-y: auto; }
 
-/* ── Section headers ── */
-.section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #888; margin: 16px 0 8px; }
-.section-label:first-child { margin-top: 0; }
+/* ── Column headers ── */
+.col-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+.col-title  { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #555; }
+.col-link   { font-size: 12px; color: #2980b9; text-decoration: none; }
+.col-link:hover { text-decoration: underline; }
 
 /* ── Email cards ── */
 .email-card { background: #fff; border: 1px solid #e4e4e0; border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
@@ -48,78 +40,43 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .email-card.urgency-2 { border-left: 4px solid #27ae60; }
 .email-card.urgency-1 { border-left: 4px solid #bdc3c7; }
 
-.card-top { padding: 12px 14px 10px; }
-.card-row1 { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; }
-.from-name { font-weight: 600; font-size: 14px; }
-.subject { font-size: 13px; color: #555; margin-top: 2px; }
-.summary { font-size: 13px; color: #333; margin-top: 5px; line-height: 1.4; }
+.card-top  { padding: 10px 12px 8px; }
+.card-row1 { display: flex; align-items: flex-start; gap: 6px; flex-wrap: wrap; }
+.from-name { font-weight: 600; font-size: 13px; }
+.subject   { font-size: 12px; color: #555; margin-top: 2px; }
+.summary   { font-size: 12px; color: #333; margin-top: 4px; line-height: 1.4; }
 
-/* badges */
-.badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
-.badge-EMERGENCY    { background: #fde8e8; color: #c0392b; }
-.badge-COMPLAINT    { background: #fef4e4; color: #d35400; }
-.badge-VIP_COMMERCIAL { background: #fff8e1; color: #b7880a; }
-.badge-QUOTE_REQUEST { background: #e8f4fd; color: #2471a3; }
-.badge-SCHEDULED_SERVICE { background: #eafaf1; color: #1d8348; }
-.badge-VENDOR_OPERATIONAL { background: #f4f6f7; color: #5d6d7e; }
-.badge-COMMUNITY    { background: #fdf2f8; color: #884ea0; }
-.badge-MISC         { background: #f4f6f7; color: #7f8c8d; }
-.badge-SPAM         { background: #f4f6f7; color: #aab7b8; }
-.badge-WEIRD        { background: #f0f3ff; color: #5b6abf; }
-.badge-BLOCKLIST    { background: #fde8e8; color: #922b21; }
-.badge-vip          { background: #fff3cd; color: #856404; }
-.badge-blocklist    { background: #f8d7da; color: #721c24; }
+.skye-notes { font-size: 11px; color: #666; background: #fafafa; border-top: 1px solid #eee; padding: 6px 12px; font-style: italic; }
 
-/* notes / skye context */
-.skye-notes { font-size: 12px; color: #666; background: #fafafa; border-top: 1px solid #eee; padding: 7px 14px; font-style: italic; }
-
-/* draft */
-.draft-toggle { font-size: 12px; color: #2471a3; cursor: pointer; padding: 6px 14px; border-top: 1px solid #eee; display: flex; align-items: center; gap: 5px; user-select: none; }
+.draft-toggle { font-size: 11px; color: #2471a3; cursor: pointer; padding: 5px 12px; border-top: 1px solid #eee; display: flex; align-items: center; gap: 4px; user-select: none; }
 .draft-toggle:hover { background: #f8f9fa; }
-.draft-body { display: none; padding: 10px 14px 12px; border-top: 1px solid #e8f4fd; background: #f0f8ff; }
-.draft-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #2471a3; margin-bottom: 6px; }
-.draft-text { font-size: 12px; line-height: 1.6; white-space: pre-wrap; color: #1a2a3a; font-family: Georgia, serif; }
-.draft-copy { margin-top: 8px; font-size: 11px; color: #2471a3; cursor: pointer; border: none; background: none; padding: 0; }
+.draft-body  { display: none; padding: 8px 12px 10px; border-top: 1px solid #e8f4fd; background: #f0f8ff; }
+.draft-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #2471a3; margin-bottom: 5px; }
+.draft-text  { font-size: 11px; line-height: 1.6; white-space: pre-wrap; color: #1a2a3a; font-family: Georgia, serif; }
+.draft-copy  { margin-top: 6px; font-size: 11px; color: #2471a3; cursor: pointer; border: none; background: none; padding: 0; }
 .draft-copy:hover { text-decoration: underline; }
 
-/* action row */
-.card-actions { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-top: 1px solid #f0f0f0; background: #fafafa; }
-.btn { font-size: 12px; padding: 5px 12px; border-radius: 5px; border: 1px solid #d0d0d0; cursor: pointer; background: #fff; color: #333; }
-.btn:hover { background: #f0f0f0; }
-.btn-done { background: #2c3e1e; color: #fff; border-color: #2c3e1e; font-weight: 600; }
-.btn-done:hover { background: #1a2512; }
-.btn-dismiss { color: #888; }
-.phone-chip { font-size: 12px; color: #555; margin-left: auto; }
+.card-actions { display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-top: 1px solid #f0f0f0; background: #fafafa; }
+.phone-chip   { font-size: 11px; color: #666; margin-left: auto; }
 
-/* ── Follow-up sidebar ── */
-.sidebar h2 { font-size: 13px; font-weight: 700; color: #444; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-.followup-item { padding: 10px; border: 1px solid #e8e8e8; border-radius: 6px; margin-bottom: 8px; }
-.followup-item.overdue { border-color: #f5c6cb; background: #fff8f8; }
-.followup-item.due-soon { border-color: #ffeeba; background: #fffdf0; }
-.fu-from { font-weight: 600; font-size: 13px; }
-.fu-desc { font-size: 12px; color: #666; margin-top: 2px; line-height: 1.4; }
-.fu-due { font-size: 11px; margin-top: 4px; font-weight: 600; }
-.fu-due.overdue { color: #c0392b; }
-.fu-due.due-soon { color: #d35400; }
-.fu-due.ok { color: #7f8c8d; }
+.more-link { font-size: 12px; color: #2980b9; text-decoration: none; display: block; text-align: center; padding: 10px; margin-top: 4px; border: 1px dashed #c8dff0; border-radius: 6px; }
+.more-link:hover { background: #f0f8ff; }
 
-.empty-state { text-align: center; padding: 40px 20px; color: #aaa; font-size: 13px; }
-</style>
-</head>
-<body>
+/* ── Follow-up cards ── */
+.fu-card { background: #f7f9f7; border: 1px solid #e0e8de; border-radius: 8px; margin-bottom: 8px; padding: 11px 12px; display: flex; align-items: flex-start; gap: 10px; }
+.fu-card.overdue  { border-left: 4px solid #c0392b; background: #fff8f8; }
+.fu-card.upcoming { border-left: 4px solid #2980b9; }
+.fu-main   { flex: 1; }
+.fu-from   { font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fu-subject { font-size: 11px; color: #888; margin-top: 2px; }
+.fu-desc   { font-size: 12px; color: #444; margin-top: 3px; line-height: 1.4; }
+.fu-due    { font-size: 11px; font-weight: 600; margin-top: 5px; }
+.fu-due.overdue  { color: #c0392b; }
+.fu-due.upcoming { color: #7f8c8d; }
+.fu-actions { flex-shrink: 0; }
+{% endblock %}
 
-<div class="header">
-  <div>
-    <h1>🦝 Possum Patrol Inbox</h1>
-    <div class="meta">{{ now.strftime('%-I:%M %p · %A, %B %-d') }}</div>
-  </div>
-  <div class="header-actions">
-    <a href="/followups">Follow-ups</a>
-    {% if done_count %}<a href="/done">Done ({{ done_count }})</a>{% endif %}
-    {% if dismissed_count %}<a href="/dismissed">Dismissed ({{ dismissed_count }})</a>{% endif %}
-    <a href="/digest">Morning Digest</a>
-  </div>
-</div>
+{% block body %}
 
 {% if stats %}
 <div class="stats">
@@ -142,134 +99,151 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 </div>
 {% endif %}
 
-{% set emergencies = emails | selectattr('urgency', 'equalto', 5) | list %}
+{% set emergencies = important_emails | selectattr('urgency', 'equalto', 5) | list %}
 {% if emergencies %}
 <div class="emergency-banner">
-  🚨 {{ emergencies | length }} ACTIVE EMERGENCY{{ 'IES' if emergencies | length > 1 else '' }} — CALL NOW
-  <ul>
+  <div class="emergency-banner-title">🚨 {{ emergencies | length }} EMERGENCY{{ 'IES' if emergencies | length > 1 else '' }} — CALL NOW</div>
+  <div class="emergency-grid">
     {% for e in emergencies %}
-    <li>{{ e.from_name }} — {{ e.summary }}{% if e.phone_number and e.phone_number != 'null' %} · 📞 {{ e.phone_number }}{% endif %}{% if e.address and e.address != 'null' %} · {{ e.address }}{% endif %}</li>
+    <div class="emergency-item">
+      <span class="em-name">{{ e.from_name }}</span>
+      <span class="em-contact">
+        {%- if e.phone_number and e.phone_number != 'null' -%}
+          📞 {{ e.phone_number }}
+        {%- elif e.address and e.address != 'null' -%}
+          📍 {{ e.address }}
+        {%- else -%}
+          📧 {{ e.from_address }}
+        {%- endif -%}
+      </span>
+      <span class="em-summary">{{ e.summary }}</span>
+    </div>
     {% endfor %}
-  </ul>
+  </div>
 </div>
 {% endif %}
 
-<div class="body">
-<div class="main-col">
+<div class="home-body">
 
-{% if not emails %}
-  <div class="empty-state">
-    <div style="font-size:36px;margin-bottom:12px">✅</div>
-    All caught up. Inbox is clear, Skye.
-  </div>
-{% endif %}
-
-{# Group emails by urgency bucket #}
-{% set buckets = [
-  (5, "🚨 Emergencies — Call Now"),
-  (4, "⚠️  Complaints & Urgent Commercial"),
-  (3, "💰 Quote Requests"),
-  (2, "📅 Scheduling & Operations"),
-  (1, "📬 Community, Misc & Weird"),
-] %}
-
-{% for urgency_level, label in buckets %}
-  {% set group = emails | selectattr('urgency', 'equalto', urgency_level) | list %}
-  {% if group %}
-  <div class="section-label">{{ label }}</div>
-  {% for email in group %}
-  <div class="email-card urgency-{{ email.urgency }}">
-    <div class="card-top">
-      <div class="card-row1">
-        <span class="from-name">{{ email.from_name }}</span>
-        <span class="badge badge-{{ email.category }}">{{ email.category.replace('_', ' ') }}</span>
-        {% if email.is_vip %}<span class="badge badge-vip">⭐ VIP</span>{% endif %}
-        {% if email.is_blocklist %}<span class="badge badge-blocklist">🚫 BLOCKLIST</span>{% endif %}
-      </div>
-      <div class="subject">{{ email.subject }}</div>
-      <div class="summary">{{ email.summary }}</div>
-    </div>
-
-    {% if email.skye_notes %}
-    <div class="skye-notes">💡 {{ email.skye_notes }}</div>
-    {% endif %}
-
-    {% if email.draft_response %}
-    <div class="draft-toggle" onclick="toggleDraft(this)">
-      <span>▶</span> Draft response ready — click to review
-    </div>
-    <div class="draft-body">
-      <div class="draft-label">Draft (review before sending)</div>
-      <div class="draft-text">{{ email.draft_response }}</div>
-      <button class="draft-copy" onclick="copyDraft(this)">Copy to clipboard</button>
-    </div>
-    {% endif %}
-
-    <div class="card-actions">
-      <form method="post" action="/email/{{ email.id }}/done" style="display:inline">
-        <button type="submit" class="btn btn-done">✓ Done</button>
-      </form>
-      <form method="post" action="/email/{{ email.id }}/dismiss" style="display:inline">
-        <button type="submit" class="btn btn-dismiss">Dismiss</button>
-      </form>
-      {% if email.phone_number and email.phone_number != 'null' %}
-      <span class="phone-chip">📞 {{ email.phone_number }}</span>
+  <!-- Left: priority emails -->
+  <div class="email-col">
+    <div class="col-header">
+      <span class="col-title">Priority Emails ({{ important_emails | length }})</span>
+      {% if other_count > 0 %}
+      <a class="col-link" href="/inbox">+{{ other_count }} more in Inbox →</a>
+      {% else %}
+      <a class="col-link" href="/inbox">Open Inbox →</a>
       {% endif %}
     </div>
+
+    {% if important_emails %}
+      {% for email in important_emails %}
+      <div class="email-card urgency-{{ email.urgency }}">
+        <div class="card-top">
+          <div class="card-row1">
+            <span class="from-name">{{ email.from_name }}</span>
+            <span class="badge badge-{{ email.category }}">{{ email.category.replace('_',' ') }}</span>
+            {% if email.is_vip %}<span class="badge badge-vip">⭐ VIP</span>{% endif %}
+            {% if email.is_blocklist %}<span class="badge badge-blocklist">🚫 BLOCKLIST</span>{% endif %}
+          </div>
+          <div class="subject">{{ email.subject }}</div>
+          <div class="summary">{{ email.summary }}</div>
+        </div>
+        {% if email.skye_notes %}
+        <div class="skye-notes">💡 {{ email.skye_notes }}</div>
+        {% endif %}
+        {% if email.draft_response %}
+        <div class="draft-toggle" onclick="toggleDraft(this)">
+          <span>▶</span> Draft ready — click to review
+        </div>
+        <div class="draft-body">
+          <div class="draft-label">Draft (review before sending)</div>
+          <div class="draft-text">{{ email.draft_response }}</div>
+          <button class="draft-copy" onclick="copyDraft(this)">Copy to clipboard</button>
+        </div>
+        {% endif %}
+        <div class="card-actions">
+          <form method="post" action="/email/{{ email.id }}/done" style="display:inline">
+            <button type="submit" class="btn btn-done">✓ Done</button>
+          </form>
+          <form method="post" action="/email/{{ email.id }}/dismiss" style="display:inline">
+            <button type="submit" class="btn btn-dismiss">Dismiss</button>
+          </form>
+          {% if email.phone_number and email.phone_number != 'null' %}
+          <span class="phone-chip">📞 {{ email.phone_number }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+
+      {% if other_count > 0 %}
+      <a class="more-link" href="/inbox">View {{ other_count }} more email{{ 's' if other_count != 1 }} in Inbox →</a>
+      {% endif %}
+
+    {% else %}
+      <div class="empty-state">
+        <div style="font-size:32px;margin-bottom:10px">✅</div>
+        No priority emails right now.<br>
+        <a href="/inbox" style="font-size:13px;color:#2980b9;text-decoration:none;margin-top:8px;display:inline-block">Check full inbox →</a>
+      </div>
+    {% endif %}
   </div>
-  {% endfor %}
-  {% endif %}
-{% endfor %}
 
-
-</div>{# end main-col #}
-
-<div class="sidebar">
-  <h2>Follow-up Queue</h2>
-  {% if follow_ups %}
-    {% for f in follow_ups %}
-    {% set is_overdue = f.due_at < now.isoformat() %}
-    <div class="followup-item {% if is_overdue %}overdue{% endif %}">
-      <div class="fu-from">
-        {{ f.from_name }}
-        {% if f.is_vip %}<span style="color:#b7880a"> ⭐</span>{% endif %}
-      </div>
-      <div class="fu-desc">{{ f.description }}</div>
-      <div class="fu-due {% if is_overdue %}overdue{% else %}ok{% endif %}">
-        {% if is_overdue %}⏰ Overdue since {{ f.due_at[:10] }}
-        {% else %}Due {{ f.due_at[:10] }}{% endif %}
-      </div>
-      <form method="post" action="/followup/{{ f.id }}/complete" style="margin-top:6px">
-        <button type="submit" class="btn" style="font-size:11px;padding:3px 9px">✓ Done</button>
-      </form>
+  <!-- Right: follow-up queue -->
+  <div class="fu-col">
+    <div class="col-header">
+      <span class="col-title">Follow-ups ({{ follow_ups | length }})</span>
+      <a class="col-link" href="/followups">Manage all →</a>
     </div>
-    {% endfor %}
-  {% else %}
-    <div style="text-align:center;color:#aaa;font-size:12px;padding:20px 0">No open follow-ups</div>
-  {% endif %}
-</div>
-</div>{# end body #}
 
+    {% if follow_ups %}
+      {% for f in follow_ups %}
+      {% set is_overdue = f.due_at < now.isoformat() %}
+      <div class="fu-card {% if is_overdue %}overdue{% else %}upcoming{% endif %}">
+        <div class="fu-main">
+          <div class="fu-from">
+            {{ f.from_name }}
+            {% if f.is_vip %}<span class="badge badge-vip">⭐ VIP</span>{% endif %}
+            <span class="badge badge-{{ f.category }}">{{ f.category.replace('_',' ') }}</span>
+          </div>
+          <div class="fu-subject">{{ f.subject }}</div>
+          <div class="fu-desc">{{ f.description }}</div>
+          <div class="fu-due {% if is_overdue %}overdue{% else %}upcoming{% endif %}">
+            {% if is_overdue %}⏰ Overdue since {{ f.due_at[:10] }}{% else %}Due {{ f.due_at[:10] }}{% endif %}
+          </div>
+        </div>
+        <div class="fu-actions">
+          <form method="post" action="/followup/{{ f.id }}/complete">
+            <button type="submit" class="btn btn-done" style="font-size:11px;padding:4px 10px">✓ Done</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state" style="padding:30px 10px">
+        <div style="font-size:28px;margin-bottom:8px">✅</div>
+        No open follow-ups.
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
 <script>
 function toggleDraft(el) {
-  const body = el.nextElementSibling;
+  const body  = el.nextElementSibling;
   const arrow = el.querySelector('span');
-  if (body.style.display === 'block') {
-    body.style.display = 'none';
-    arrow.textContent = '▶';
-  } else {
-    body.style.display = 'block';
-    arrow.textContent = '▼';
-  }
+  const open  = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  arrow.textContent  = open ? '▶' : '▼';
 }
-
 function copyDraft(btn) {
-  const text = btn.previousElementSibling.textContent;
-  navigator.clipboard.writeText(text).then(() => {
+  navigator.clipboard.writeText(btn.previousElementSibling.textContent).then(() => {
     btn.textContent = 'Copied!';
     setTimeout(() => btn.textContent = 'Copy to clipboard', 2000);
   });
 }
 </script>
-</body>
-</html>
+{% endblock %}

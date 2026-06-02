@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+{% block title %}Inbox — Possum Patrol{% endblock %}
+
+{% block head_styles %}
+/* ── Filter / sort bar ── */
+.filter-bar { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 10px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.filter-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.filter-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #999; white-space: nowrap; }
+.filter-pill { font-size: 12px; padding: 4px 11px; border-radius: 20px; border: 1px solid #d8d8d8; background: #fff; color: #555; cursor: pointer; white-space: nowrap; transition: all 0.1s; }
+.filter-pill:hover { border-color: #aaa; color: #222; }
+.filter-pill.active { background: #2c3e1e; border-color: #2c3e1e; color: #fff; }
+.filter-pill.active-alert { background: #c0392b; border-color: #c0392b; color: #fff; }
+.filter-divider { width: 1px; height: 22px; background: #e0e0e0; flex-shrink: 0; }
+.filter-count { font-size: 11px; color: #aaa; margin-left: auto; white-space: nowrap; }
+.sort-btn { font-size: 12px; padding: 4px 10px; border-radius: 5px; border: 1px solid #d8d8d8; background: #fff; color: #666; cursor: pointer; white-space: nowrap; }
+.sort-btn:hover { border-color: #aaa; color: #333; }
+.sort-btn.active { background: #2c3e1e; border-color: #2c3e1e; color: #fff; }
+
+/* ── Layout ── */
+.inbox-body { display: grid; grid-template-columns: 3fr 2fr; gap: 0; min-height: calc(100vh - 52px); max-width: 1400px; margin: 0 auto; }
+.pending-col { padding: 20px; border-right: 1px solid #e4e4e0; overflow-y: auto; }
+.archive-col { padding: 20px; background: #fafafa; overflow-y: auto; }
+
+.col-header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.col-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #555; }
+.col-count { font-size: 12px; color: #aaa; }
+
+/* ── Email cards ── */
+.email-card { background: #fff; border: 1px solid #e4e4e0; border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
+.email-card.urgency-5 { border-left: 4px solid #c0392b; }
+.email-card.urgency-4 { border-left: 4px solid #d35400; }
+.email-card.urgency-3 { border-left: 4px solid #2980b9; }
+.email-card.urgency-2 { border-left: 4px solid #27ae60; }
+.email-card.urgency-1 { border-left: 4px solid #bdc3c7; }
+.email-card.done-card { border-left: 4px solid #27ae60; opacity: 0.75; }
+.email-card.dismissed-card { border-left: 4px solid #bdc3c7; opacity: 0.7; }
+.email-card[hidden] { display: none !important; }
+
+.card-top { padding: 10px 12px 8px; }
+.card-row1 { display: flex; align-items: flex-start; gap: 6px; flex-wrap: wrap; }
+.from-name { font-weight: 600; font-size: 13px; }
+.subject { font-size: 12px; color: #555; margin-top: 2px; }
+.summary { font-size: 12px; color: #444; margin-top: 4px; line-height: 1.4; }
+
+.skye-notes { font-size: 11px; color: #666; background: #fafafa; border-top: 1px solid #eee; padding: 6px 12px; font-style: italic; }
+
+.draft-toggle { font-size: 11px; color: #2471a3; cursor: pointer; padding: 5px 12px; border-top: 1px solid #eee; display: flex; align-items: center; gap: 4px; user-select: none; }
+.draft-toggle:hover { background: #f8f9fa; }
+.draft-body { display: none; padding: 8px 12px 10px; border-top: 1px solid #e8f4fd; background: #f0f8ff; }
+.draft-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #2471a3; margin-bottom: 5px; }
+.draft-text { font-size: 11px; line-height: 1.6; white-space: pre-wrap; color: #1a2a3a; font-family: Georgia, serif; }
+.draft-copy { margin-top: 6px; font-size: 11px; color: #2471a3; cursor: pointer; border: none; background: none; padding: 0; }
+.draft-copy:hover { text-decoration: underline; }
+
+.card-actions { display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-top: 1px solid #f0f0f0; background: #fafafa; }
+.phone-chip { font-size: 11px; color: #666; margin-left: auto; }
+
+/* ── Urgency sections ── */
+.urgency-section { }
+.urgency-section.hidden { display: none; }
+.section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #888; margin: 14px 0 6px; }
+.section-label:first-child { margin-top: 0; }
+
+/* ── Archive sections ── */
+.archive-section { border: 1px solid #e4e4e0; border-radius: 8px; margin-bottom: 12px; background: #fff; overflow: hidden; }
+.archive-section summary { list-style: none; cursor: pointer; padding: 10px 14px; display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #555; user-select: none; }
+.archive-section summary::-webkit-details-marker { display: none; }
+.archive-section summary:hover { background: #f5f5f5; }
+.archive-section[open] summary { border-bottom: 1px solid #eee; }
+.archive-chevron { font-size: 10px; color: #aaa; transition: transform 0.15s; }
+.archive-section[open] .archive-chevron { transform: rotate(90deg); }
+.archive-count { margin-left: auto; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 10px; }
+.archive-count.done-count { background: #eafaf1; color: #1d8348; }
+.archive-count.dismissed-count { background: #f4f6f7; color: #7f8c8d; }
+.archive-cards { padding: 8px; }
+.archive-cards .email-card { margin-bottom: 6px; }
+.archive-cards .email-card:last-child { margin-bottom: 0; }
+
+.no-results { display: none; text-align: center; padding: 24px; color: #bbb; font-size: 12px; font-style: italic; }
+{% endblock %}
+
+{% block body %}
+
+<!-- Filter + sort bar -->
+<div class="filter-bar">
+  <div class="filter-group">
+    <span class="filter-label">Urgency</span>
+    <button class="filter-pill active" data-filter="urgency" data-value="all"  onclick="setFilter('urgency','all',this)">All</button>
+    <button class="filter-pill"        data-filter="urgency" data-value="5"    onclick="setFilter('urgency','5',this)">🚨 Emergency</button>
+    <button class="filter-pill"        data-filter="urgency" data-value="4"    onclick="setFilter('urgency','4',this)">⚠️ High</button>
+    <button class="filter-pill"        data-filter="urgency" data-value="3"    onclick="setFilter('urgency','3',this)">💰 Medium</button>
+    <button class="filter-pill"        data-filter="urgency" data-value="low"  onclick="setFilter('urgency','low',this)">📅 Low</button>
+  </div>
+  <div class="filter-divider"></div>
+  <div class="filter-group">
+    <span class="filter-label">Category</span>
+    {% set categories = [] %}
+    {% for e in pending %}
+      {% if e.category not in categories %}{% set _ = categories.append(e.category) %}{% endif %}
+    {% endfor %}
+    <button class="filter-pill active" data-filter="category" data-value="all" onclick="setFilter('category','all',this)">All</button>
+    {% for cat in categories | sort %}
+    <button class="filter-pill" data-filter="category" data-value="{{ cat }}" onclick="setFilter('category','{{ cat }}',this)">{{ cat.replace('_',' ') }}</button>
+    {% endfor %}
+  </div>
+  <div class="filter-divider"></div>
+  <div class="filter-group">
+    <button class="filter-pill" id="vip-toggle" onclick="toggleVip(this)">⭐ VIP Only</button>
+  </div>
+  <div class="filter-divider"></div>
+  <div class="filter-group">
+    <span class="filter-label">Sort</span>
+    <button class="sort-btn active" data-sort="urgency" data-dir="desc" onclick="handleSort(this)">Urgency <span>↓</span></button>
+    <button class="sort-btn"        data-sort="date"    data-dir="desc" onclick="handleSort(this)">Date <span>↓</span></button>
+    <button class="sort-btn"        data-sort="name"    data-dir="asc"  onclick="handleSort(this)">Name <span>↑</span></button>
+  </div>
+  <span class="filter-count" id="filter-count"></span>
+</div>
+
+<div class="inbox-body">
+
+  <!-- Left: pending emails -->
+  <div class="pending-col">
+    <div class="col-header">
+      <span class="col-title">Pending</span>
+      <span class="col-count" id="pending-count">({{ pending | length }})</span>
+    </div>
+
+    {% if pending %}
+      {% set buckets = [
+        (5, "🚨 Emergencies — Call Now"),
+        (4, "⚠️  Complaints & Urgent"),
+        (3, "💰 Quote Requests"),
+        (2, "📅 Scheduling & Operations"),
+        (1, "📬 Community, Misc & Weird"),
+      ] %}
+
+      {% for urgency_level, label in buckets %}
+        {% set group = pending | selectattr('urgency', 'equalto', urgency_level) | list %}
+        {% if group %}
+        <div class="urgency-section" data-urgency="{{ urgency_level }}">
+          <div class="section-label">{{ label }}</div>
+          {% for email in group %}
+          <div class="email-card urgency-{{ email.urgency }}"
+               data-urgency="{{ email.urgency }}"
+               data-category="{{ email.category }}"
+               data-vip="{{ '1' if email.is_vip else '0' }}"
+               data-name="{{ email.from_name }}"
+               data-received="{{ email.received_at }}">
+            <div class="card-top">
+              <div class="card-row1">
+                <span class="from-name">{{ email.from_name }}</span>
+                <span class="badge badge-{{ email.category }}">{{ email.category.replace('_',' ') }}</span>
+                {% if email.is_vip %}<span class="badge badge-vip">⭐ VIP</span>{% endif %}
+                {% if email.is_blocklist %}<span class="badge badge-blocklist">🚫 BLOCKLIST</span>{% endif %}
+              </div>
+              <div class="subject">{{ email.subject }}</div>
+              <div class="summary">{{ email.summary }}</div>
+            </div>
+            {% if email.skye_notes %}
+            <div class="skye-notes">💡 {{ email.skye_notes }}</div>
+            {% endif %}
+            {% if email.draft_response %}
+            <div class="draft-toggle" onclick="toggleDraft(this)">
+              <span>▶</span> Draft ready — click to review
+            </div>
+            <div class="draft-body">
+              <div class="draft-label">Draft (review before sending)</div>
+              <div class="draft-text">{{ email.draft_response }}</div>
+              <button class="draft-copy" onclick="copyDraft(this)">Copy to clipboard</button>
+            </div>
+            {% endif %}
+            <div class="card-actions">
+              <form method="post" action="/email/{{ email.id }}/done" style="display:inline">
+                <button type="submit" class="btn btn-done">✓ Done</button>
+              </form>
+              <form method="post" action="/email/{{ email.id }}/dismiss" style="display:inline">
+                <button type="submit" class="btn btn-dismiss">Dismiss</button>
+              </form>
+              {% if email.phone_number and email.phone_number != 'null' %}
+              <span class="phone-chip">📞 {{ email.phone_number }}</span>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      {% endfor %}
+      <div class="no-results" id="pending-no-results">No emails match the current filters.</div>
+    {% else %}
+      <div class="empty-state">
+        <div style="font-size:32px;margin-bottom:10px">✅</div>
+        Inbox is clear, Skye.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Right: done + dismissed archive -->
+  <div class="archive-col">
+    <div class="col-header">
+      <span class="col-title">Archive</span>
+    </div>
+
+    <!-- Done section -->
+    <details class="archive-section" {% if done %}open{% endif %}>
+      <summary>
+        <span class="archive-chevron">▶</span>
+        ✅ Done
+        <span class="archive-count done-count" id="done-archive-count">{{ done | length }}</span>
+      </summary>
+      <div class="archive-cards" id="done-archive-cards">
+        {% if done %}
+          {% for email in done %}
+          <div class="email-card done-card"
+               data-urgency="{{ email.urgency }}"
+               data-category="{{ email.category }}"
+               data-vip="{{ '1' if email.is_vip else '0' }}"
+               data-name="{{ email.from_name }}"
+               data-received="{{ email.received_at }}">
+            <div class="card-top">
+              <div class="card-row1">
+                <span class="from-name">{{ email.from_name }}</span>
+                <span class="badge badge-{{ email.category }}">{{ email.category.replace('_',' ') }}</span>
+                {% if email.is_vip %}<span class="badge badge-vip">⭐ VIP</span>{% endif %}
+              </div>
+              <div class="subject">{{ email.subject }}</div>
+              {% if email.summary %}<div class="summary" style="font-style:italic;color:#666">{{ email.summary }}</div>{% endif %}
+            </div>
+            <div class="card-actions">
+              <form method="post" action="/email/{{ email.id }}/undone" style="display:inline">
+                <button type="submit" class="btn">↩ Mark as Pending</button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+          <div class="no-results" id="done-archive-no-results">No items match the current filters.</div>
+        {% else %}
+          <div style="text-align:center;padding:16px;color:#bbb;font-size:12px">No completed emails yet.</div>
+        {% endif %}
+      </div>
+    </details>
+
+    <!-- Dismissed section -->
+    <details class="archive-section" {% if dismissed %}open{% endif %}>
+      <summary>
+        <span class="archive-chevron">▶</span>
+        🚫 Dismissed
+        <span class="archive-count dismissed-count" id="dismissed-archive-count">{{ dismissed | length }}</span>
+      </summary>
+      <div class="archive-cards" id="dismissed-archive-cards">
+        {% if dismissed %}
+          {% for email in dismissed %}
+          <div class="email-card dismissed-card"
+               data-urgency="{{ email.urgency }}"
+               data-category="{{ email.category }}"
+               data-vip="{{ '1' if email.is_vip else '0' }}"
+               data-name="{{ email.from_name }}"
+               data-received="{{ email.received_at }}">
+            <div class="card-top">
+              <div class="card-row1">
+                <span class="from-name">{{ email.from_name }}</span>
+                <span class="badge badge-{{ email.category }}">{{ email.category.replace('_',' ') }}</span>
+                {% if email.is_vip %}<span class="badge badge-vip">⭐ VIP</span>{% endif %}
+              </div>
+              <div class="subject">{{ email.subject }}</div>
+              {% if email.summary %}<div class="summary" style="font-style:italic;color:#666">{{ email.summary }}</div>{% endif %}
+            </div>
+            <div class="card-actions">
+              <form method="post" action="/email/{{ email.id }}/undismiss" style="display:inline">
+                <button type="submit" class="btn">↩ Undismiss</button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+          <div class="no-results" id="dismissed-archive-no-results">No items match the current filters.</div>
+        {% else %}
+          <div style="text-align:center;padding:16px;color:#bbb;font-size:12px">No dismissed emails.</div>
+        {% endif %}
+      </div>
+    </details>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const filters = { urgency: 'all', category: 'all', vip: false };
+
+// Record each pending card's original urgency section on load
+const sectionOf = new Map();
+document.querySelectorAll('.urgency-section').forEach(sec => {
+  sec.querySelectorAll('.email-card').forEach(card => sectionOf.set(card, sec));
+});
+
+let flatList = null;
+let sortState = { key: 'urgency', dir: 'desc' };
+
+function handleSort(btn) {
+  const key = btn.dataset.sort;
+  if (key === sortState.key) {
+    sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+    btn.dataset.dir = sortState.dir;
+    btn.querySelector('span').textContent = sortState.dir === 'asc' ? '↑' : '↓';
+  } else {
+    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    sortState.key = key;
+    sortState.dir = btn.dataset.dir;
+  }
+  doSort();
+}
+
+function setFilter(type, value, btn) {
+  filters[type] = value;
+  document.querySelectorAll(`[data-filter="${type}"]`).forEach(el => el.classList.remove('active', 'active-alert'));
+  btn.classList.add(value === '5' ? 'active-alert' : 'active');
+  applyFilters();
+}
+
+function toggleVip(btn) {
+  filters.vip = !filters.vip;
+  btn.classList.toggle('active', filters.vip);
+  applyFilters();
+}
+
+function cardMatchesFilters(card) {
+  const urgency  = parseInt(card.dataset.urgency);
+  const category = card.dataset.category;
+  const isVip    = card.dataset.vip === '1';
+  const urgencyMatch =
+    filters.urgency === 'all' ? true :
+    filters.urgency === 'low' ? urgency <= 2 :
+    parseInt(filters.urgency) === urgency;
+  return urgencyMatch &&
+    (filters.category === 'all' || category === filters.category) &&
+    (!filters.vip || isVip);
+}
+
+function compareCards(a, b) {
+  let cmp = 0;
+  if (sortState.key === 'urgency') cmp = parseInt(a.dataset.urgency) - parseInt(b.dataset.urgency);
+  if (sortState.key === 'name')    cmp = a.dataset.name.localeCompare(b.dataset.name);
+  if (sortState.key === 'date')    cmp = a.dataset.received.localeCompare(b.dataset.received);
+  return sortState.dir === 'asc' ? cmp : -cmp;
+}
+
+function doSort() {
+  // ── Pending column ──────────────────────────────────────
+  if (sortState.key === 'urgency') {
+    sectionOf.forEach((sec, card) => sec.appendChild(card));
+    document.querySelectorAll('.urgency-section').forEach(s => s.classList.remove('hidden'));
+    if (flatList) flatList.style.display = 'none';
+  } else {
+    const sorted = [...sectionOf.keys()].sort(compareCards);
+    document.querySelectorAll('.urgency-section').forEach(s => s.classList.add('hidden'));
+    if (!flatList) {
+      flatList = document.createElement('div');
+      flatList.id = 'flat-list';
+      document.getElementById('pending-no-results').insertAdjacentElement('beforebegin', flatList);
+    }
+    flatList.style.display = '';
+    flatList.innerHTML = '';
+    sorted.forEach(card => flatList.appendChild(card));
+  }
+
+  // ── Archive sections (always flat-sorted) ───────────────
+  ['done-archive-cards', 'dismissed-archive-cards'].forEach(id => {
+    const container = document.getElementById(id);
+    if (!container) return;
+    const noResults = container.querySelector('.no-results');
+    [...container.querySelectorAll('.email-card')].sort(compareCards)
+      .forEach(card => container.insertBefore(card, noResults));
+  });
+
+  applyFilters();
+}
+
+function applyFilters() {
+  // ── Pending column ──────────────────────────────────────
+  let pendingVisible = 0, pendingTotal = 0;
+  document.querySelectorAll('.pending-col .email-card').forEach(card => {
+    pendingTotal++;
+    const show = cardMatchesFilters(card);
+    card.hidden = !show;
+    if (show) pendingVisible++;
+  });
+
+  if (currentSort === 'urgency') {
+    document.querySelectorAll('.urgency-section').forEach(sec => {
+      const hasVisible = [...sec.querySelectorAll('.email-card')].some(c => !c.hidden);
+      sec.classList.toggle('hidden', !hasVisible);
+    });
+  }
+
+  document.getElementById('pending-count').textContent = `(${pendingVisible})`;
+  const pendingNR = document.getElementById('pending-no-results');
+  if (pendingNR) pendingNR.style.display = pendingVisible === 0 && pendingTotal > 0 ? 'block' : 'none';
+
+  // ── Archive columns ──────────────────────────────────────
+  let doneVisible = 0, dismissedVisible = 0;
+
+  const doneContainer = document.getElementById('done-archive-cards');
+  if (doneContainer) {
+    doneContainer.querySelectorAll('.email-card').forEach(card => {
+      const show = cardMatchesFilters(card);
+      card.hidden = !show;
+      if (show) doneVisible++;
+    });
+    const doneTotal = doneContainer.querySelectorAll('.email-card').length;
+    const doneNR = document.getElementById('done-archive-no-results');
+    if (doneNR) doneNR.style.display = doneVisible === 0 && doneTotal > 0 ? 'block' : 'none';
+    const doneCount = document.getElementById('done-archive-count');
+    if (doneCount) doneCount.textContent = doneVisible < doneTotal ? `${doneVisible} / ${doneTotal}` : doneTotal;
+  }
+
+  const dismissedContainer = document.getElementById('dismissed-archive-cards');
+  if (dismissedContainer) {
+    dismissedContainer.querySelectorAll('.email-card').forEach(card => {
+      const show = cardMatchesFilters(card);
+      card.hidden = !show;
+      if (show) dismissedVisible++;
+    });
+    const dismissedTotal = dismissedContainer.querySelectorAll('.email-card').length;
+    const dismissedNR = document.getElementById('dismissed-archive-no-results');
+    if (dismissedNR) dismissedNR.style.display = dismissedVisible === 0 && dismissedTotal > 0 ? 'block' : 'none';
+    const dismissedCount = document.getElementById('dismissed-archive-count');
+    if (dismissedCount) dismissedCount.textContent = dismissedVisible < dismissedTotal ? `${dismissedVisible} / ${dismissedTotal}` : dismissedTotal;
+  }
+
+  // ── Filter count summary ─────────────────────────────────
+  const totalVisible = pendingVisible + doneVisible + dismissedVisible;
+  const totalAll     = pendingTotal +
+    (doneContainer?.querySelectorAll('.email-card').length ?? 0) +
+    (dismissedContainer?.querySelectorAll('.email-card').length ?? 0);
+  document.getElementById('filter-count').textContent =
+    totalVisible === totalAll ? '' : `${totalVisible} of ${totalAll} shown`;
+}
+
+// Apply initial sort on load
+doSort();
+
+function toggleDraft(el) {
+  const body  = el.nextElementSibling;
+  const arrow = el.querySelector('span');
+  const open  = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  arrow.textContent  = open ? '▶' : '▼';
+}
+
+function copyDraft(btn) {
+  navigator.clipboard.writeText(btn.previousElementSibling.textContent).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy to clipboard', 2000);
+  });
+}
+</script>
+{% endblock %}

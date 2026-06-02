@@ -184,3 +184,23 @@ def complete_follow_up(fid: int):
             "UPDATE follow_ups SET status = 'completed', completed_at = datetime('now') WHERE id = ?",
             (fid,),
         )
+
+
+def get_nav_counts() -> dict:
+    with get_db() as conn:
+        row = conn.execute("""
+            SELECT
+                SUM(CASE WHEN status = 'pending' AND category != 'SPAM' THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status = 'done'      THEN 1 ELSE 0 END) as done,
+                SUM(CASE WHEN status = 'dismissed' THEN 1 ELSE 0 END) as dismissed
+            FROM processed_emails
+        """).fetchone()
+        fu_row = conn.execute(
+            "SELECT COUNT(*) as open_followups FROM follow_ups WHERE status = 'open'"
+        ).fetchone()
+        return {
+            "pending":        row["pending"] or 0,
+            "done":           row["done"] or 0,
+            "dismissed":      row["dismissed"] or 0,
+            "open_followups": fu_row["open_followups"] or 0,
+        }

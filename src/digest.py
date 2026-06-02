@@ -99,8 +99,4 @@ def generate_digest() -> str:
         icon = CATEGORY_ICONS.get(row["category"], "📧")
         lines.append(f"   {icon}  {row['category']}: {row['n']}")
 
-    lines.append("")
-    lines.append("=" * 52)
-    lines.append("Open dashboard → http://localhost:8000")
-
     return "\n".join(lines)

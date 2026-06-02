@@ -3,7 +3,8 @@
 
 {% block head_styles %}
 /* ── Filter bar ── */
-.filter-bar { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 10px 20px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.filter-bar { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 10px 20px 0; display: flex; flex-direction: column; gap: 0; }
+.filter-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding-bottom: 10px; }
 .filter-group { display: flex; align-items: center; gap: 6px; }
 .filter-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #999; white-space: nowrap; }
 .filter-pill { font-size: 12px; padding: 4px 11px; border-radius: 20px; border: 1px solid #d8d8d8; background: #fff; color: #555; cursor: pointer; white-space: nowrap; transition: all 0.1s; }
@@ -16,6 +17,15 @@
 .sort-btn { font-size: 11px; padding: 3px 8px; border-radius: 5px; border: 1px solid #d8d8d8; background: #fff; color: #666; cursor: pointer; white-space: nowrap; }
 .sort-btn:hover { border-color: #aaa; color: #333; }
 .sort-btn.active { background: #2c3e1e; border-color: #2c3e1e; color: #fff; }
+
+/* ── Search row ── */
+.filter-search-row { border-top: 1px solid #f0f0f0; padding: 8px 0 10px; }
+.search-wrap { position: relative; }
+.search-input { width: 100%; font-size: 13px; padding: 7px 36px 7px 14px; border: 1px solid #ddd; border-radius: 8px; outline: none; background: #fafafa; color: #333; transition: border-color 0.15s, background 0.15s; }
+.search-input:focus { border-color: #2c3e1e; background: #fff; }
+.search-input::placeholder { color: #bbb; }
+.search-clear { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #bbb; font-size: 18px; line-height: 1; display: none; border: none; background: none; padding: 0; }
+.search-clear:hover { color: #777; }
 
 .main { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
 .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
@@ -51,29 +61,39 @@
 
 <!-- Filter bar -->
 <div class="filter-bar">
-  <div class="filter-group">
-    <span class="filter-label">Status</span>
-    <button class="filter-pill active" data-filter="timing" data-value="all"     onclick="setFilter('timing','all',this)">All</button>
-    <button class="filter-pill"        data-filter="timing" data-value="overdue"  onclick="setFilter('timing','overdue',this)">⏰ Overdue</button>
-    <button class="filter-pill"        data-filter="timing" data-value="upcoming" onclick="setFilter('timing','upcoming',this)">Upcoming</button>
+  <div class="filter-controls">
+    <div class="filter-group">
+      <span class="filter-label">Status</span>
+      <button class="filter-pill active" data-filter="timing" data-value="all"     onclick="setFilter('timing','all',this)">All</button>
+      <button class="filter-pill"        data-filter="timing" data-value="overdue"  onclick="setFilter('timing','overdue',this)">⏰ Overdue</button>
+      <button class="filter-pill"        data-filter="timing" data-value="upcoming" onclick="setFilter('timing','upcoming',this)">Upcoming</button>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <span class="filter-label">Category</span>
+      {% set categories = [] %}
+      {% for f in followups %}
+        {% if f.category not in categories %}{% set _ = categories.append(f.category) %}{% endif %}
+      {% endfor %}
+      <button class="filter-pill active" data-filter="category" data-value="all" onclick="setFilter('category','all',this)">All</button>
+      {% for cat in categories | sort %}
+      <button class="filter-pill" data-filter="category" data-value="{{ cat }}" onclick="setFilter('category','{{ cat }}',this)">{{ cat.replace('_',' ') }}</button>
+      {% endfor %}
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <button class="filter-pill" id="vip-toggle" onclick="toggleVip(this)">⭐ VIP Only</button>
+    </div>
+    <span class="filter-count" id="filter-count"></span>
   </div>
-  <div class="filter-divider"></div>
-  <div class="filter-group">
-    <span class="filter-label">Category</span>
-    {% set categories = [] %}
-    {% for f in followups %}
-      {% if f.category not in categories %}{% set _ = categories.append(f.category) %}{% endif %}
-    {% endfor %}
-    <button class="filter-pill active" data-filter="category" data-value="all" onclick="setFilter('category','all',this)">All</button>
-    {% for cat in categories | sort %}
-    <button class="filter-pill" data-filter="category" data-value="{{ cat }}" onclick="setFilter('category','{{ cat }}',this)">{{ cat.replace('_',' ') }}</button>
-    {% endfor %}
+  <div class="filter-search-row">
+    <div class="search-wrap">
+      <input type="text" class="search-input" id="fu-search"
+             placeholder="Search by name, subject, or description…"
+             oninput="onSearch()" autocomplete="off">
+      <button class="search-clear" id="search-clear" onclick="clearSearch()" tabindex="-1">×</button>
+    </div>
   </div>
-  <div class="filter-divider"></div>
-  <div class="filter-group">
-    <button class="filter-pill" id="vip-toggle" onclick="toggleVip(this)">⭐ VIP Only</button>
-  </div>
-  <span class="filter-count" id="filter-count"></span>
 </div>
 
 <div class="main">
@@ -100,7 +120,8 @@
            data-col="open"
            data-due="{{ f.due_at }}"
            data-priority="{{ f.priority }}"
-           data-name="{{ f.from_name }}">
+           data-name="{{ f.from_name }}"
+           data-search="{{ f.from_name | lower }} {{ f.subject | lower }} {{ (f.description or '') | lower }}">
         <div class="fu-main">
           <div class="fu-from">
             {{ f.from_name }}
@@ -146,7 +167,8 @@
            data-due="{{ f.due_at }}"
            data-priority="{{ f.priority }}"
            data-name="{{ f.from_name }}"
-           data-completed="{{ f.completed_at or '' }}">
+           data-completed="{{ f.completed_at or '' }}"
+           data-search="{{ f.from_name | lower }} {{ f.subject | lower }} {{ (f.description or '') | lower }}">
         <div class="fu-main">
           <div class="fu-from">
             {{ f.from_name }}
@@ -238,8 +260,25 @@ function sortColumn(col) {
 sortColumn('open');
 sortColumn('done');
 
+function getSearchTerm() {
+  return (document.getElementById('fu-search')?.value || '').toLowerCase().trim();
+}
+
+function onSearch() {
+  const term = getSearchTerm();
+  document.getElementById('search-clear').style.display = term ? 'block' : 'none';
+  applyFilters();
+}
+
+function clearSearch() {
+  document.getElementById('fu-search').value = '';
+  document.getElementById('search-clear').style.display = 'none';
+  applyFilters();
+}
+
 function applyFilters() {
   const cards = document.querySelectorAll('.fu-card');
+  const term  = getSearchTerm();
   let openVisible = 0, doneVisible = 0;
 
   cards.forEach(card => {
@@ -251,8 +290,9 @@ function applyFilters() {
     const timingMatch   = filters.timing === 'all' || col === 'done' || timing === filters.timing;
     const categoryMatch = filters.category === 'all' || category === filters.category;
     const vipMatch      = !filters.vip || isVip;
+    const searchMatch   = !term || (card.dataset.search || '').includes(term);
 
-    const visible = timingMatch && categoryMatch && vipMatch;
+    const visible = timingMatch && categoryMatch && vipMatch && searchMatch;
     card.hidden = !visible;
 
     if (visible) { col === 'open' ? openVisible++ : doneVisible++; }

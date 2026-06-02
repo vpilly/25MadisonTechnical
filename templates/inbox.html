@@ -3,7 +3,8 @@
 
 {% block head_styles %}
 /* ── Filter / sort bar ── */
-.filter-bar { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 10px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.filter-bar { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 10px 20px 0; display: flex; flex-direction: column; gap: 0; }
+.filter-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding-bottom: 10px; }
 .filter-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .filter-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #999; white-space: nowrap; }
 .filter-pill { font-size: 12px; padding: 4px 11px; border-radius: 20px; border: 1px solid #d8d8d8; background: #fff; color: #555; cursor: pointer; white-space: nowrap; transition: all 0.1s; }
@@ -15,6 +16,15 @@
 .sort-btn { font-size: 12px; padding: 4px 10px; border-radius: 5px; border: 1px solid #d8d8d8; background: #fff; color: #666; cursor: pointer; white-space: nowrap; }
 .sort-btn:hover { border-color: #aaa; color: #333; }
 .sort-btn.active { background: #2c3e1e; border-color: #2c3e1e; color: #fff; }
+
+/* ── Search row ── */
+.filter-search-row { border-top: 1px solid #f0f0f0; padding: 8px 0 10px; }
+.search-wrap { position: relative; }
+.search-input { width: 100%; font-size: 13px; padding: 7px 36px 7px 14px; border: 1px solid #ddd; border-radius: 8px; outline: none; background: #fafafa; color: #333; transition: border-color 0.15s, background 0.15s; }
+.search-input:focus { border-color: #2c3e1e; background: #fff; }
+.search-input::placeholder { color: #bbb; }
+.search-clear { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #bbb; font-size: 18px; line-height: 1; display: none; border: none; background: none; padding: 0; }
+.search-clear:hover { color: #777; }
 
 /* ── Layout ── */
 .inbox-body { display: grid; grid-template-columns: 3fr 2fr; gap: 0; min-height: calc(100vh - 52px); max-width: 1400px; margin: 0 auto; }
@@ -83,38 +93,48 @@
 
 <!-- Filter + sort bar -->
 <div class="filter-bar">
-  <div class="filter-group">
-    <span class="filter-label">Urgency</span>
-    <button class="filter-pill active" data-filter="urgency" data-value="all"  onclick="setFilter('urgency','all',this)">All</button>
-    <button class="filter-pill"        data-filter="urgency" data-value="5"    onclick="setFilter('urgency','5',this)">🚨 Emergency</button>
-    <button class="filter-pill"        data-filter="urgency" data-value="4"    onclick="setFilter('urgency','4',this)">⚠️ High</button>
-    <button class="filter-pill"        data-filter="urgency" data-value="3"    onclick="setFilter('urgency','3',this)">💰 Medium</button>
-    <button class="filter-pill"        data-filter="urgency" data-value="low"  onclick="setFilter('urgency','low',this)">📅 Low</button>
+  <div class="filter-controls">
+    <div class="filter-group">
+      <span class="filter-label">Urgency</span>
+      <button class="filter-pill active" data-filter="urgency" data-value="all"  onclick="setFilter('urgency','all',this)">All</button>
+      <button class="filter-pill"        data-filter="urgency" data-value="5"    onclick="setFilter('urgency','5',this)">🚨 Emergency</button>
+      <button class="filter-pill"        data-filter="urgency" data-value="4"    onclick="setFilter('urgency','4',this)">⚠️ High</button>
+      <button class="filter-pill"        data-filter="urgency" data-value="3"    onclick="setFilter('urgency','3',this)">💰 Medium</button>
+      <button class="filter-pill"        data-filter="urgency" data-value="low"  onclick="setFilter('urgency','low',this)">📅 Low</button>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <span class="filter-label">Category</span>
+      {% set categories = [] %}
+      {% for e in pending %}
+        {% if e.category not in categories %}{% set _ = categories.append(e.category) %}{% endif %}
+      {% endfor %}
+      <button class="filter-pill active" data-filter="category" data-value="all" onclick="setFilter('category','all',this)">All</button>
+      {% for cat in categories | sort %}
+      <button class="filter-pill" data-filter="category" data-value="{{ cat }}" onclick="setFilter('category','{{ cat }}',this)">{{ cat.replace('_',' ') }}</button>
+      {% endfor %}
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <button class="filter-pill" id="vip-toggle" onclick="toggleVip(this)">⭐ VIP Only</button>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <span class="filter-label">Sort</span>
+      <button class="sort-btn active" data-sort="urgency" data-dir="desc" onclick="handleSort(this)">Urgency <span>↓</span></button>
+      <button class="sort-btn"        data-sort="date"    data-dir="desc" onclick="handleSort(this)">Date <span>↓</span></button>
+      <button class="sort-btn"        data-sort="name"    data-dir="asc"  onclick="handleSort(this)">Name <span>↑</span></button>
+    </div>
+    <span class="filter-count" id="filter-count"></span>
   </div>
-  <div class="filter-divider"></div>
-  <div class="filter-group">
-    <span class="filter-label">Category</span>
-    {% set categories = [] %}
-    {% for e in pending %}
-      {% if e.category not in categories %}{% set _ = categories.append(e.category) %}{% endif %}
-    {% endfor %}
-    <button class="filter-pill active" data-filter="category" data-value="all" onclick="setFilter('category','all',this)">All</button>
-    {% for cat in categories | sort %}
-    <button class="filter-pill" data-filter="category" data-value="{{ cat }}" onclick="setFilter('category','{{ cat }}',this)">{{ cat.replace('_',' ') }}</button>
-    {% endfor %}
+  <div class="filter-search-row">
+    <div class="search-wrap">
+      <input type="text" class="search-input" id="inbox-search"
+             placeholder="Search by name, subject, or summary…"
+             oninput="onSearch()" autocomplete="off">
+      <button class="search-clear" id="search-clear" onclick="clearSearch()" tabindex="-1">×</button>
+    </div>
   </div>
-  <div class="filter-divider"></div>
-  <div class="filter-group">
-    <button class="filter-pill" id="vip-toggle" onclick="toggleVip(this)">⭐ VIP Only</button>
-  </div>
-  <div class="filter-divider"></div>
-  <div class="filter-group">
-    <span class="filter-label">Sort</span>
-    <button class="sort-btn active" data-sort="urgency" data-dir="desc" onclick="handleSort(this)">Urgency <span>↓</span></button>
-    <button class="sort-btn"        data-sort="date"    data-dir="desc" onclick="handleSort(this)">Date <span>↓</span></button>
-    <button class="sort-btn"        data-sort="name"    data-dir="asc"  onclick="handleSort(this)">Name <span>↑</span></button>
-  </div>
-  <span class="filter-count" id="filter-count"></span>
 </div>
 
 <div class="inbox-body">
@@ -146,7 +166,8 @@
                data-category="{{ email.category }}"
                data-vip="{{ '1' if email.is_vip else '0' }}"
                data-name="{{ email.from_name }}"
-               data-received="{{ email.received_at }}">
+               data-received="{{ email.received_at }}"
+               data-search="{{ email.from_name | lower }} {{ email.subject | lower }} {{ (email.summary or '') | lower }}">
             <div class="card-top">
               <div class="card-row1">
                 <span class="from-name">{{ email.from_name }}</span>
@@ -216,7 +237,8 @@
                data-category="{{ email.category }}"
                data-vip="{{ '1' if email.is_vip else '0' }}"
                data-name="{{ email.from_name }}"
-               data-received="{{ email.received_at }}">
+               data-received="{{ email.received_at }}"
+               data-search="{{ email.from_name | lower }} {{ email.subject | lower }} {{ (email.summary or '') | lower }}">
             <div class="card-top">
               <div class="card-row1">
                 <span class="from-name">{{ email.from_name }}</span>
@@ -255,7 +277,8 @@
                data-category="{{ email.category }}"
                data-vip="{{ '1' if email.is_vip else '0' }}"
                data-name="{{ email.from_name }}"
-               data-received="{{ email.received_at }}">
+               data-received="{{ email.received_at }}"
+               data-search="{{ email.from_name | lower }} {{ email.subject | lower }} {{ (email.summary or '') | lower }}">
             <div class="card-top">
               <div class="card-row1">
                 <span class="from-name">{{ email.from_name }}</span>
@@ -325,17 +348,38 @@ function toggleVip(btn) {
   applyFilters();
 }
 
+function getSearchTerm() {
+  return (document.getElementById('inbox-search')?.value || '').toLowerCase().trim();
+}
+
+function onSearch() {
+  const term = getSearchTerm();
+  document.getElementById('search-clear').style.display = term ? 'block' : 'none';
+  applyFilters();
+}
+
+function clearSearch() {
+  document.getElementById('inbox-search').value = '';
+  document.getElementById('search-clear').style.display = 'none';
+  applyFilters();
+}
+
 function cardMatchesFilters(card) {
   const urgency  = parseInt(card.dataset.urgency);
   const category = card.dataset.category;
   const isVip    = card.dataset.vip === '1';
+  const term     = getSearchTerm();
+
   const urgencyMatch =
     filters.urgency === 'all' ? true :
     filters.urgency === 'low' ? urgency <= 2 :
     parseInt(filters.urgency) === urgency;
+  const searchMatch = !term || (card.dataset.search || '').includes(term);
+
   return urgencyMatch &&
     (filters.category === 'all' || category === filters.category) &&
-    (!filters.vip || isVip);
+    (!filters.vip || isVip) &&
+    searchMatch;
 }
 
 function compareCards(a, b) {
@@ -413,6 +457,8 @@ function applyFilters() {
     if (doneNR) doneNR.style.display = doneVisible === 0 && doneTotal > 0 ? 'block' : 'none';
     const doneCount = document.getElementById('done-archive-count');
     if (doneCount) doneCount.textContent = doneVisible < doneTotal ? `${doneVisible} / ${doneTotal}` : doneTotal;
+    // Auto-expand if a search finds matches here
+    if (getSearchTerm() && doneVisible > 0) doneContainer.closest('details').open = true;
   }
 
   const dismissedContainer = document.getElementById('dismissed-archive-cards');
@@ -427,6 +473,8 @@ function applyFilters() {
     if (dismissedNR) dismissedNR.style.display = dismissedVisible === 0 && dismissedTotal > 0 ? 'block' : 'none';
     const dismissedCount = document.getElementById('dismissed-archive-count');
     if (dismissedCount) dismissedCount.textContent = dismissedVisible < dismissedTotal ? `${dismissedVisible} / ${dismissedTotal}` : dismissedTotal;
+    // Auto-expand if a search finds matches here
+    if (getSearchTerm() && dismissedVisible > 0) dismissedContainer.closest('details').open = true;
   }
 
   // ── Filter count summary ─────────────────────────────────
